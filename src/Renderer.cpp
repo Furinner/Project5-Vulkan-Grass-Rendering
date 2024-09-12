@@ -596,7 +596,7 @@ void Renderer::CreateGraphicsPipeline() {
     //以片段数来描述线条的粗细，任何粗于1.0f的线条都需要启用GPU的wideLines功能
     rasterizer.lineWidth = 1.0f;
     //要使用的面剔除类型，有VK_CULL_MODE_NONE、VK_CULL_MODE_FRONT_BIT、VK_CULL_MODE_BACK_BIT、VK_CULL_MODE_FRONT_AND_BACK
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
     //指定将面视为正面的顶点顺序，可以是顺时针或逆时针
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     //rasterizer可以通过添加一个常量值或根据fragment的斜率偏置深度值来改变深度值。这有时会用于阴影贴图
@@ -770,7 +770,7 @@ void Renderer::CreateGrassPipeline() {
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_TRUE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_NONE;
@@ -955,6 +955,7 @@ void Renderer::CreateFrameResources() {
 
     VkFormat depthFormat = device->GetInstance()->GetSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     // CREATE DEPTH IMAGE
+    // 我们只需要一个深度图像，因为一次只运行一个绘制操作
     Image::Create(device,
         swapChain->GetVkExtent().width,
         swapChain->GetVkExtent().height,

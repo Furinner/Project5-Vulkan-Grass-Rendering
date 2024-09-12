@@ -111,7 +111,7 @@ void SwapChain::Create() {
     //指定了每个图像的层数。除非开发的是立体 3D 应用程序，否则该值始终为1
     createInfo.imageArrayLayers = 1;
     //我们将swap chain中的图像用于何种操作
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.imageUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     const auto& queueFamilyIndices = instance->GetQueueFamilyIndices();
     //根据queueFamily的数量，决定为framebuffer中的图像设置何种sharing的模式
