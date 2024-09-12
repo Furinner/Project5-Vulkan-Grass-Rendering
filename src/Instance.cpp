@@ -3,6 +3,7 @@
 #include <vector>
 #include "Instance.h"
 
+// NDEBUG is a C++ macro, determine if the program is in debug mode or release mode
 #ifdef NDEBUG
 const bool ENABLE_VALIDATION = false;
 #else
@@ -258,6 +259,7 @@ void Instance::PickPhysicalDevice(std::vector<const char*> deviceExtensions, Que
             }
         }
 
+        //如果需要present queue family，说明要显示，那么需要检查设备支持的Surface的属性
         if (requiredQueues[QueueFlags::Present]) {
             // Get basic surface capabilities
             vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &surfaceCapabilities);
@@ -350,6 +352,9 @@ Device* Instance::CreateDevice(QueueFlagBits requiredQueues, VkPhysicalDeviceFea
         throw std::runtime_error("Failed to create logical device");
     }
 
+    //queue是和logical device一起自动创建的，我们需要拿到存储这些queue的句柄
+    // queues就是拿到所有required queues的handle
+    //如果queue family的index都是一样的，那么最后queues里的queue都是同一个
     Device::Queues queues;
     for (unsigned int i = 0; i < requiredQueues.size(); ++i) {
         if (requiredQueues[i]) {

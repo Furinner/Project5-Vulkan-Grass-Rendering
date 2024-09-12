@@ -79,11 +79,18 @@ void SwapChain::Create() {
 
     const auto& surfaceCapabilities = instance->GetSurfaceCapabilities();
 
+    //选择最佳的format、presentation mode和swap extent。
+    //format优先 VK_FORMAT_B8G8R8A8_SRGB + VK_COLORSPACE_SRGB_NONLINEAR_KHR
+    //presentation mode优先 VK_PRESENT_MODE_MAILBOX_KHR （垂直同步+减少延迟）
+    //swap extent基本与屏幕一致
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(instance->GetSurfaceFormats());
     VkPresentModeKHR presentMode = chooseSwapPresentMode(instance->GetPresentModes());
     VkExtent2D extent = chooseSwapExtent(surfaceCapabilities, GetGLFWWindow());
 
+    //如果仅仅坚持最小值，意味着我们有时可能需要等待驱动程序完成内部操作，
+    //才能获取另一张图像进行渲染，所以建议至少比最小值多请求一幅图像
     uint32_t imageCount = surfaceCapabilities.minImageCount + 1;
+    //希望imageCount大于numBuffers
     imageCount = numBuffers > imageCount ? numBuffers : imageCount;
     if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount) {
         imageCount = surfaceCapabilities.maxImageCount;
@@ -101,10 +108,13 @@ void SwapChain::Create() {
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
+    //指定了每个图像的层数。除非开发的是立体 3D 应用程序，否则该值始终为1
     createInfo.imageArrayLayers = 1;
+    //我们将swap chain中的图像用于何种操作
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     const auto& queueFamilyIndices = instance->GetQueueFamilyIndices();
+    //根据queueFamily的数量，决定为framebuffer中的图像设置何种sharing的模式
     if (queueFamilyIndices[QueueFlags::Graphics] != queueFamilyIndices[QueueFlags::Present]) {
         // Images can be used across multiple queue families without explicit ownership transfers
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -126,6 +136,8 @@ void SwapChain::Create() {
     createInfo.preTransform = surfaceCapabilities.currentTransform;
 
     // Specify alpha channel usage (set to be ignored here)
+    // compositeAlpha specifies if the alpha channel should be used for
+    // blending with other windows in the window system
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
     // Specify presentation mode
@@ -135,6 +147,10 @@ void SwapChain::Create() {
     createInfo.clipped = VK_TRUE;
 
     // Reference to old swap chain in case current one becomes invalid
+    // 在运行 Vulkan 应用程序时，交换链有可能失效或未优化，例如窗口大小被调整。
+    // 在这种情况下，交换链实际上需要从头开始重新创建，并且必须在该字段中指定对旧交换链的引用
+    // 之后再更改这里，现在假设窗口大小不发生改变
+    // TO DO
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
     // Create swap chain
@@ -143,6 +159,7 @@ void SwapChain::Create() {
     }
 
     // --- Retrieve swap chain images ---
+    // 拿到swap chain中所有VkImage的句柄，渲染操作中将引用这些句柄
     vkGetSwapchainImagesKHR(device->GetVkDevice(), vkSwapChain, &imageCount, nullptr);
     vkSwapChainImages.resize(imageCount);
     vkGetSwapchainImagesKHR(device->GetVkDevice(), vkSwapChain, &imageCount, vkSwapChainImages.data());

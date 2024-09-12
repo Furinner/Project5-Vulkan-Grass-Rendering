@@ -16,7 +16,7 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     camera(camera) {
 
     CreateCommandPools();
-    CreateRenderPass();
+    CreateRenderPass();  //render pass决定渲染时如何使用frame buffer
     CreateCameraDescriptorSetLayout();
     CreateModelDescriptorSetLayout();
     CreateTimeDescriptorSetLayout();
@@ -27,8 +27,8 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     CreateGrassDescriptorSets();
     CreateTimeDescriptorSet();
     CreateComputeDescriptorSets();
-    CreateFrameResources();
-    CreateGraphicsPipeline();
+    CreateFrameResources();  //创建imageView
+    CreateGraphicsPipeline();  //包括所有的可编程stages（shaderModule）、fixed-function stages、renderPass等
     CreateGrassPipeline();
     CreateComputePipeline();
     RecordCommandBuffers();
@@ -56,19 +56,35 @@ void Renderer::CreateCommandPools() {
 }
 
 void Renderer::CreateRenderPass() {
+    // 有关渲染时将使用的frame buffer attachment的信息
     // Color buffer attachment represented by one of the images from the swap chain
     VkAttachmentDescription colorAttachment = {};
     colorAttachment.format = swapChain->GetVkImageFormat();
+    //多重采样
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    //渲染前如何处理attachment中的颜色和深度数据
+    //VK_ATTACHMENT_LOAD_OP_LOAD：保留现有内容
+    //VK_ATTACHMENT_LOAD_OP_CLEAR：清除为某一常量
+    //VK_ATTACHMENT_LOAD_OP_DONT_CARE
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    //渲染后如何处理attachment中的颜色和深度数据
+    //VK_ATTACHMENT_STORE_OP_STORE：渲染内容将存储在内存中，之后可以读取
+    //VK_ATTACHMENT_STORE_OP_DONT_CARE
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    //同上，只不过是stencil数据
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    //Vulkan 中的纹理和帧缓存由具有特定像素格式的VkImage对象表示，但内存中的像素layout会根据您要对图像进行的操作而发生变化。
+    //initialLayout指定了图像在开始渲染之前的layout
+    //finalLayout指定了渲染过程结束后自动过渡到的layout
+    //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: 在交换链中显示的图像
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     // Create a color attachment reference to be used with subpass
+    // subpass会用到
     VkAttachmentReference colorAttachmentRef = {};
+    //通过index引用attachments数组中的attachment
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -504,6 +520,7 @@ void Renderer::CreateComputeDescriptorSets() {
 }
 
 void Renderer::CreateGraphicsPipeline() {
+    //创建shaderModule，注意这里的文件已经是编译好的SPIR-V格式了
     VkShaderModule vertShaderModule = ShaderModule::Create("shaders/graphics.vert.spv", logicalDevice);
     VkShaderModule fragShaderModule = ShaderModule::Create("shaders/graphics.frag.spv", logicalDevice);
 
@@ -520,6 +537,7 @@ void Renderer::CreateGraphicsPipeline() {
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main";
 
+    // 可编程stages的数组
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
     // --- Set up fixed-function stages ---
@@ -565,12 +583,19 @@ void Renderer::CreateGraphicsPipeline() {
     // Rasterizer
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    //如果为True，则超出近平面和远平面的片段就会被夹住，而不会被丢弃
     rasterizer.depthClampEnable = VK_FALSE;
+    //如果为True，那么几何体将永远不会通过光栅化阶段。这基本上禁止了向frame buffer的任何输出
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    //决定fragment的生成方式，可以有FILL，LINE和POINT几种模式
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    //以片段数来描述线条的粗细，任何粗于1.0f的线条都需要启用GPU的wideLines功能
     rasterizer.lineWidth = 1.0f;
+    //要使用的面剔除类型，有VK_CULL_MODE_NONE、VK_CULL_MODE_FRONT_BIT、VK_CULL_MODE_BACK_BIT、VK_CULL_MODE_FRONT_AND_BACK
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    //指定将面视为正面的顶点顺序，可以是顺时针或逆时针
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    //rasterizer可以通过添加一个常量值或根据fragment的斜率偏置深度值来改变深度值。这有时会用于阴影贴图
     rasterizer.depthBiasEnable = VK_FALSE;
     rasterizer.depthBiasConstantFactor = 0.0f;
     rasterizer.depthBiasClamp = 0.0f;
@@ -650,7 +675,8 @@ void Renderer::CreateGraphicsPipeline() {
     pipelineInfo.pDynamicState = nullptr;
     pipelineInfo.layout = graphicsPipelineLayout;
     pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0;
+    pipelineInfo.subpass = 0; //subpass的index
+    //pipeline派生时使用
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.basePipelineIndex = -1;
 
@@ -900,6 +926,7 @@ void Renderer::CreateFrameResources() {
         createInfo.image = swapChain->GetVkImage(i);
 
         // Specify how the image data should be interpreted
+        // 通过viewType参数，可以将图像视为一维纹理、二维纹理、三维纹理和立方体贴图cube maps
         createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         createInfo.format = swapChain->GetVkImageFormat();
 
@@ -940,7 +967,6 @@ void Renderer::CreateFrameResources() {
     // Transition the image for use as depth-stencil
     Image::TransitionLayout(device, graphicsCommandPool, depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-    
     // CREATE FRAMEBUFFERS
     framebuffers.resize(swapChain->GetCount());
     for (size_t i = 0; i < swapChain->GetCount(); i++) {
@@ -951,11 +977,14 @@ void Renderer::CreateFrameResources() {
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        //要兼容的renderPass
         framebufferInfo.renderPass = renderPass;
+        //VkImageViews对象
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
         framebufferInfo.width = swapChain->GetVkExtent().width;
         framebufferInfo.height = swapChain->GetVkExtent().height;
+        //layers指的是图像数组中的层数。我们的交换链图像是单张图像，因此层数为1
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(logicalDevice, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {
