@@ -15,7 +15,7 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     scene(scene),
     camera(camera) {
 
-    CreateCommandPools();
+    CreateCommandPools(); //commandPool管理用于commandBuffers的内存
     CreateRenderPass();  //render pass决定渲染时如何使用frame buffer
     CreateCameraDescriptorSetLayout();
     CreateModelDescriptorSetLayout();
@@ -27,7 +27,7 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     CreateGrassDescriptorSets();
     CreateTimeDescriptorSet();
     CreateComputeDescriptorSets();
-    CreateFrameResources();  //创建imageView
+    CreateFrameResources();  //创建imageView和frameBuffer
     CreateGraphicsPipeline();  //包括所有的可编程stages（shaderModule）、fixed-function stages、renderPass等
     CreateGrassPipeline();
     CreateComputePipeline();
@@ -36,9 +36,13 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
 }
 
 void Renderer::CreateCommandPools() {
+    //Each command pool can only allocate command buffers that are submitted on a single type of queue
+    //有了command pool才可以开始allocate command buffer。
     VkCommandPoolCreateInfo graphicsPoolInfo = {};
     graphicsPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     graphicsPoolInfo.queueFamilyIndex = device->GetInstance()->GetQueueFamilyIndices()[QueueFlags::Graphics];
+    //VK_COMMAND_POOL_CREATE_TRANSIENT_BIT：提示command buffer总是会加入新命令。1
+    //VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT：Allow command buffers to be rerecorded individually, without this flag they all have to be reset together. 2
     graphicsPoolInfo.flags = 0;
 
     if (vkCreateCommandPool(logicalDevice, &graphicsPoolInfo, nullptr, &graphicsCommandPool) != VK_SUCCESS) {
@@ -620,7 +624,7 @@ void Renderer::CreateGraphicsPipeline() {
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.minDepthBounds = 0.0f;
     depthStencil.maxDepthBounds = 1.0f;
-    depthStencil.stencilTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = VK_TRUE;
 
     // Color blending (turned off here, but showing options for learning)
     // --> Configuration per attached framebuffer
@@ -1073,6 +1077,8 @@ void Renderer::RecordCommandBuffers() {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = graphicsCommandPool;
+    //VK_COMMAND_BUFFER_LEVEL_PRIMARY：可以提交到队列中执行，但不能从其他command buffer中调用。
+    //VK_COMMAND_BUFFER_LEVEL_SECONDARY：不能直接提交，但可以从primary command buffer中调用。
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
@@ -1084,7 +1090,11 @@ void Renderer::RecordCommandBuffers() {
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        //VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT: command buffer在执行一次后将立即重新记录。
+        //VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT：这是一个辅助命令缓冲区，将完全在一次渲染过程中使用。
+        //VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT：该命令缓冲区可以在执行过程中重新提交。
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        //与secondary command buffers有关
         beginInfo.pInheritanceInfo = nullptr;
 
         // ~ Start recording ~
@@ -1123,6 +1133,8 @@ void Renderer::RecordCommandBuffers() {
         // Bind the camera descriptor set. This is set 0 in all pipelines so it will be inherited
         vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout, 0, 1, &cameraDescriptorSet, 0, nullptr);
 
+        //VK_SUBPASS_CONTENTS_INLINE: 渲染传递命令将嵌入主命令缓冲区本身，不会执行辅助命令缓冲区
+        //VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS: 将通过二级命令缓冲区执行render pass command
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         // Bind the graphics pipeline
