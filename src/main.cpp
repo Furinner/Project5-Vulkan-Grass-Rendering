@@ -1,4 +1,4 @@
-#include <vulkan/vulkan.h>
+ï»¿#include <vulkan/vulkan.h>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
@@ -74,38 +74,38 @@ int main() {
     unsigned int glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-    //Vulkan ÊÇÓëÆ½Ì¨ÎÞ¹ØµÄapplication API£¬²»°üº¬´´½¨´°¿ÚÀ´ÏÔÊ¾äÖÈ¾½á¹ûµÄ¹¤¾ß
-    // ´´½¨instanceÊ±£¬´«ÈëglfwËùÐèµÄextension
+    //Vulkan æ˜¯ä¸Žå¹³å°æ— å…³çš„application APIï¼Œä¸åŒ…å«åˆ›å»ºçª—å£æ¥æ˜¾ç¤ºæ¸²æŸ“ç»“æžœçš„å·¥å…·
+    // åˆ›å»ºinstanceæ—¶ï¼Œä¼ å…¥glfwæ‰€éœ€çš„extension
     Instance* instance = new Instance(applicationName, glfwExtensionCount, glfwExtensions);
 
-    //Vulkan ÊÇÓëÆ½Ì¨ÎÞ¹ØµÄapplication API£¬±¾ÉíÎÞ·¨Ö±½ÓÓë´°¿ÚÏµÍ³¶Ô½Ó
-    //ÒªÔÚ Vulkan ºÍ´°¿ÚÏµÍ³Ö®¼ä½¨Á¢Á¬½Ó£¬½«½á¹û³ÊÏÖÔÚÆÁÄ»ÉÏ£¬
-    //ÎÒÃÇÐèÒªÊ¹ÓÃ WSI£¨Window System Integration£©À©Õ¹£¬¼´VK_KHR_surface
-    //Ëü°üº¬ÔÚglfwGetRequiredInstanceExtensions ·µ»ØµÄÁÐ±íÖÐ
-    //Í¬Ê±£¬window surfaceÐèÒªÔÚinstance´´½¨ºóÁ¢¼´´´½¨£¬ÒòÎªËüÊµ¼ÊÉÏ»áÓ°ÏìÎïÀíÉè±¸µÄÑ¡Ôñ¡£
+    //Vulkan æ˜¯ä¸Žå¹³å°æ— å…³çš„application APIï¼Œæœ¬èº«æ— æ³•ç›´æŽ¥ä¸Žçª—å£ç³»ç»Ÿå¯¹æŽ¥
+    //è¦åœ¨ Vulkan å’Œçª—å£ç³»ç»Ÿä¹‹é—´å»ºç«‹è¿žæŽ¥ï¼Œå°†ç»“æžœå‘ˆçŽ°åœ¨å±å¹•ä¸Šï¼Œ
+    //æˆ‘ä»¬éœ€è¦ä½¿ç”¨ WSIï¼ˆWindow System Integrationï¼‰æ‰©å±•ï¼Œå³VK_KHR_surface
+    //å®ƒåŒ…å«åœ¨glfwGetRequiredInstanceExtensions è¿”å›žçš„åˆ—è¡¨ä¸­
+    //åŒæ—¶ï¼Œwindow surfaceéœ€è¦åœ¨instanceåˆ›å»ºåŽç«‹å³åˆ›å»ºï¼Œå› ä¸ºå®ƒå®žé™…ä¸Šä¼šå½±å“ç‰©ç†è®¾å¤‡çš„é€‰æ‹©ã€‚
     VkSurfaceKHR surface;
-    //glfwCreateWindowSurfaceÒÑ¾­°ïÄã´¦ÀíÁËÆ½Ì¨²îÒì
+    //glfwCreateWindowSurfaceå·²ç»å¸®ä½ å¤„ç†äº†å¹³å°å·®å¼‚
     if (glfwCreateWindowSurface(instance->GetVkInstance(), GetGLFWWindow(), nullptr, &surface) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create window surface");
     }
 
-    //Ñ¡Ôñphysical device£¬ÕâÀï¿ÉÒÔÑ¡ÔñÄãÏ£Íûphysical deviceÖ§³ÖÄÄÐ©queue family£¬ÒÔ¼°Ö§³ÖÄÄÐ©device extensions
-    //×¢Òâ£¬ÕâÀïÊÇdeviceÖ§³ÖÄÄÐ©extension£¨ÈçÕâÀï¼ì²édeviceÊÇ·ñÖ§³Öswap chain£©£¬Ç°ÃæinstanceÊÇÐèÒªinstanceÔØÈëÄÄÐ©extension
-    //instanceµÄqueueFamilyIndicesÔÚÕâÒ»²½¾ö³ö,´ú±íÃ¿Ò»¸öËùÐèµÄqueueËùÊôÄÄÒ»¸öqueueFamily
+    //é€‰æ‹©physical deviceï¼Œè¿™é‡Œå¯ä»¥é€‰æ‹©ä½ å¸Œæœ›physical deviceæ”¯æŒå“ªäº›queue familyï¼Œä»¥åŠæ”¯æŒå“ªäº›device extensions
+    //æ³¨æ„ï¼Œè¿™é‡Œæ˜¯deviceæ”¯æŒå“ªäº›extensionï¼ˆå¦‚è¿™é‡Œæ£€æŸ¥deviceæ˜¯å¦æ”¯æŒswap chainï¼‰ï¼Œå‰é¢instanceæ˜¯éœ€è¦instanceè½½å…¥å“ªäº›extension
+    //instanceçš„queueFamilyIndicesåœ¨è¿™ä¸€æ­¥å†³å‡º,ä»£è¡¨æ¯ä¸€ä¸ªæ‰€éœ€çš„queueæ‰€å±žå“ªä¸€ä¸ªqueueFamily
     instance->PickPhysicalDevice({ VK_KHR_SWAPCHAIN_EXTENSION_NAME }, QueueFlagBit::GraphicsBit | QueueFlagBit::TransferBit | QueueFlagBit::ComputeBit | QueueFlagBit::PresentBit, surface);
 
-    //ÎÒÃÇ½«ÒªÊ¹ÓÃµÄdeviceµÄÌØÐÔ¼¯
+    //æˆ‘ä»¬å°†è¦ä½¿ç”¨çš„deviceçš„ç‰¹æ€§é›†
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.tessellationShader = VK_TRUE;
     deviceFeatures.fillModeNonSolid = VK_TRUE;
     deviceFeatures.samplerAnisotropy = VK_TRUE;
 
-    //Ñ¡ÔñÁËÒªÊ¹ÓÃµÄphysical deviceºó£¬ÎÒÃÇÐèÒªÉèÖÃÒ»¸ölogical deviceÀ´ÓëÖ®Á¬½Ó
-    //logical device¸úËæµÄqueueÒ²»áËæÖ®´´½¨ºÃ
+    //é€‰æ‹©äº†è¦ä½¿ç”¨çš„physical deviceåŽï¼Œæˆ‘ä»¬éœ€è¦è®¾ç½®ä¸€ä¸ªlogical deviceæ¥ä¸Žä¹‹è¿žæŽ¥
+    //logical deviceè·Ÿéšçš„queueä¹Ÿä¼šéšä¹‹åˆ›å»ºå¥½
     device = instance->CreateDevice(QueueFlagBit::GraphicsBit | QueueFlagBit::TransferBit | QueueFlagBit::ComputeBit | QueueFlagBit::PresentBit, deviceFeatures);
 
-    //VulkanÃ»ÓÐdefault framebufferµÄ¸ÅÄî£¬ËùÒÔÎÒÃÇÐèÒªÒ»¸ö½Ðswap chainµÄ»ù´¡¼Ü¹¹À´ownÕâ¸öframebuffer
-    //ÎÒÃÇäÖÈ¾µ½framebufferÉÏ£¬×îÖÕÈÃËüvisualize on screen
+    //Vulkanæ²¡æœ‰default framebufferçš„æ¦‚å¿µï¼Œæ‰€ä»¥æˆ‘ä»¬éœ€è¦ä¸€ä¸ªå«swap chainçš„åŸºç¡€æž¶æž„æ¥ownè¿™ä¸ªframebuffer
+    //æˆ‘ä»¬æ¸²æŸ“åˆ°framebufferä¸Šï¼Œæœ€ç»ˆè®©å®ƒvisualize on screen
     swapChain = device->CreateSwapChain(surface, 5);
 
     camera = new Camera(device, 640.f / 480.f);
@@ -166,8 +166,8 @@ int main() {
     double FPS = 0.0;
     int count2 = 0;
     while (!ShouldQuit()) {
-        //glfwPollEventsº¯Êý¼ì²éÓÐÃ»ÓÐ´¥·¢Ê²Ã´ÊÂ¼þ²¢¸üÐÂ´°¿Ú×´Ì¬
-        //²¢µ÷ÓÃ¶ÔÓ¦µÄ»Øµ÷º¯Êý£¨¿ÉÒÔÍ¨¹ý»Øµ÷·½·¨ÊÖ¶¯ÉèÖÃ£©
+        //glfwPollEventså‡½æ•°æ£€æŸ¥æœ‰æ²¡æœ‰è§¦å‘ä»€ä¹ˆäº‹ä»¶å¹¶æ›´æ–°çª—å£çŠ¶æ€
+        //å¹¶è°ƒç”¨å¯¹åº”çš„å›žè°ƒå‡½æ•°ï¼ˆå¯ä»¥é€šè¿‡å›žè°ƒæ–¹æ³•æ‰‹åŠ¨è®¾ç½®ï¼‰
         glfwPollEvents();
         scene->UpdateTime();
         double time1 = glfwGetTime(); // returns time in seconds

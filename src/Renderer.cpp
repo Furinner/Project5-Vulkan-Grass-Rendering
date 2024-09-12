@@ -1,4 +1,4 @@
-#include "Renderer.h"
+ï»¿#include "Renderer.h"
 #include "Instance.h"
 #include "ShaderModule.h"
 #include "Vertex.h"
@@ -16,7 +16,7 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     camera(camera) {
 
     CreateCommandPools();
-    CreateRenderPass();  //render pass¾ö¶¨äÖÈ¾Ê±ÈçºÎÊ¹ÓÃframe buffer
+    CreateRenderPass();  //render passå†³å®šæ¸²æŸ“æ—¶å¦‚ä½•ä½¿ç”¨frame buffer
     CreateCameraDescriptorSetLayout();
     CreateModelDescriptorSetLayout();
     CreateTimeDescriptorSetLayout();
@@ -27,8 +27,8 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     CreateGrassDescriptorSets();
     CreateTimeDescriptorSet();
     CreateComputeDescriptorSets();
-    CreateFrameResources();  //´´½¨imageView
-    CreateGraphicsPipeline();  //°üÀ¨ËùÓĞµÄ¿É±à³Ìstages£¨shaderModule£©¡¢fixed-function stages¡¢renderPassµÈ
+    CreateFrameResources();  //åˆ›å»ºimageView
+    CreateGraphicsPipeline();  //åŒ…æ‹¬æ‰€æœ‰çš„å¯ç¼–ç¨‹stagesï¼ˆshaderModuleï¼‰ã€fixed-function stagesã€renderPassç­‰
     CreateGrassPipeline();
     CreateComputePipeline();
     RecordCommandBuffers();
@@ -56,35 +56,35 @@ void Renderer::CreateCommandPools() {
 }
 
 void Renderer::CreateRenderPass() {
-    // ÓĞ¹ØäÖÈ¾Ê±½«Ê¹ÓÃµÄframe buffer attachmentµÄĞÅÏ¢
+    // æœ‰å…³æ¸²æŸ“æ—¶å°†ä½¿ç”¨çš„frame buffer attachmentçš„ä¿¡æ¯
     // Color buffer attachment represented by one of the images from the swap chain
     VkAttachmentDescription colorAttachment = {};
     colorAttachment.format = swapChain->GetVkImageFormat();
-    //¶àÖØ²ÉÑù
+    //å¤šé‡é‡‡æ ·
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    //äÖÈ¾Ç°ÈçºÎ´¦ÀíattachmentÖĞµÄÑÕÉ«ºÍÉî¶ÈÊı¾İ
-    //VK_ATTACHMENT_LOAD_OP_LOAD£º±£ÁôÏÖÓĞÄÚÈİ
-    //VK_ATTACHMENT_LOAD_OP_CLEAR£ºÇå³ıÎªÄ³Ò»³£Á¿
+    //æ¸²æŸ“å‰å¦‚ä½•å¤„ç†attachmentä¸­çš„é¢œè‰²å’Œæ·±åº¦æ•°æ®
+    //VK_ATTACHMENT_LOAD_OP_LOADï¼šä¿ç•™ç°æœ‰å†…å®¹
+    //VK_ATTACHMENT_LOAD_OP_CLEARï¼šæ¸…é™¤ä¸ºæŸä¸€å¸¸é‡
     //VK_ATTACHMENT_LOAD_OP_DONT_CARE
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    //äÖÈ¾ºóÈçºÎ´¦ÀíattachmentÖĞµÄÑÕÉ«ºÍÉî¶ÈÊı¾İ
-    //VK_ATTACHMENT_STORE_OP_STORE£ºäÖÈ¾ÄÚÈİ½«´æ´¢ÔÚÄÚ´æÖĞ£¬Ö®ºó¿ÉÒÔ¶ÁÈ¡
+    //æ¸²æŸ“åå¦‚ä½•å¤„ç†attachmentä¸­çš„é¢œè‰²å’Œæ·±åº¦æ•°æ®
+    //VK_ATTACHMENT_STORE_OP_STOREï¼šæ¸²æŸ“å†…å®¹å°†å­˜å‚¨åœ¨å†…å­˜ä¸­ï¼Œä¹‹åå¯ä»¥è¯»å–
     //VK_ATTACHMENT_STORE_OP_DONT_CARE
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    //Í¬ÉÏ£¬Ö»²»¹ıÊÇstencilÊı¾İ
+    //åŒä¸Šï¼Œåªä¸è¿‡æ˜¯stencilæ•°æ®
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    //Vulkan ÖĞµÄÎÆÀíºÍÖ¡»º´æÓÉ¾ßÓĞÌØ¶¨ÏñËØ¸ñÊ½µÄVkImage¶ÔÏó±íÊ¾£¬µ«ÄÚ´æÖĞµÄÏñËØlayout»á¸ù¾İÄúÒª¶ÔÍ¼Ïñ½øĞĞµÄ²Ù×÷¶ø·¢Éú±ä»¯¡£
-    //initialLayoutÖ¸¶¨ÁËÍ¼ÏñÔÚ¿ªÊ¼äÖÈ¾Ö®Ç°µÄlayout
-    //finalLayoutÖ¸¶¨ÁËäÖÈ¾¹ı³Ì½áÊøºó×Ô¶¯¹ı¶Éµ½µÄlayout
-    //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: ÔÚ½»»»Á´ÖĞÏÔÊ¾µÄÍ¼Ïñ
+    //Vulkan ä¸­çš„çº¹ç†å’Œå¸§ç¼“å­˜ç”±å…·æœ‰ç‰¹å®šåƒç´ æ ¼å¼çš„VkImageå¯¹è±¡è¡¨ç¤ºï¼Œä½†å†…å­˜ä¸­çš„åƒç´ layoutä¼šæ ¹æ®æ‚¨è¦å¯¹å›¾åƒè¿›è¡Œçš„æ“ä½œè€Œå‘ç”Ÿå˜åŒ–ã€‚
+    //initialLayoutæŒ‡å®šäº†å›¾åƒåœ¨å¼€å§‹æ¸²æŸ“ä¹‹å‰çš„layout
+    //finalLayoutæŒ‡å®šäº†æ¸²æŸ“è¿‡ç¨‹ç»“æŸåè‡ªåŠ¨è¿‡æ¸¡åˆ°çš„layout
+    //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: åœ¨äº¤æ¢é“¾ä¸­æ˜¾ç¤ºçš„å›¾åƒ
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     // Create a color attachment reference to be used with subpass
-    // subpass»áÓÃµ½
+    // subpassä¼šç”¨åˆ°
     VkAttachmentReference colorAttachmentRef = {};
-    //Í¨¹ıindexÒıÓÃattachmentsÊı×éÖĞµÄattachment
+    //é€šè¿‡indexå¼•ç”¨attachmentsæ•°ç»„ä¸­çš„attachment
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -520,7 +520,7 @@ void Renderer::CreateComputeDescriptorSets() {
 }
 
 void Renderer::CreateGraphicsPipeline() {
-    //´´½¨shaderModule£¬×¢ÒâÕâÀïµÄÎÄ¼şÒÑ¾­ÊÇ±àÒëºÃµÄSPIR-V¸ñÊ½ÁË
+    //åˆ›å»ºshaderModuleï¼Œæ³¨æ„è¿™é‡Œçš„æ–‡ä»¶å·²ç»æ˜¯ç¼–è¯‘å¥½çš„SPIR-Væ ¼å¼äº†
     VkShaderModule vertShaderModule = ShaderModule::Create("shaders/graphics.vert.spv", logicalDevice);
     VkShaderModule fragShaderModule = ShaderModule::Create("shaders/graphics.frag.spv", logicalDevice);
 
@@ -537,7 +537,7 @@ void Renderer::CreateGraphicsPipeline() {
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main";
 
-    // ¿É±à³ÌstagesµÄÊı×é
+    // å¯ç¼–ç¨‹stagesçš„æ•°ç»„
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
     // --- Set up fixed-function stages ---
@@ -583,19 +583,19 @@ void Renderer::CreateGraphicsPipeline() {
     // Rasterizer
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    //Èç¹ûÎªTrue£¬Ôò³¬³ö½üÆ½ÃæºÍÔ¶Æ½ÃæµÄÆ¬¶Î¾Í»á±»¼Ğ×¡£¬¶ø²»»á±»¶ªÆú
+    //å¦‚æœä¸ºTrueï¼Œåˆ™è¶…å‡ºè¿‘å¹³é¢å’Œè¿œå¹³é¢çš„ç‰‡æ®µå°±ä¼šè¢«å¤¹ä½ï¼Œè€Œä¸ä¼šè¢«ä¸¢å¼ƒ
     rasterizer.depthClampEnable = VK_FALSE;
-    //Èç¹ûÎªTrue£¬ÄÇÃ´¼¸ºÎÌå½«ÓÀÔ¶²»»áÍ¨¹ı¹âÕ¤»¯½×¶Î¡£Õâ»ù±¾ÉÏ½ûÖ¹ÁËÏòframe bufferµÄÈÎºÎÊä³ö
+    //å¦‚æœä¸ºTrueï¼Œé‚£ä¹ˆå‡ ä½•ä½“å°†æ°¸è¿œä¸ä¼šé€šè¿‡å…‰æ …åŒ–é˜¶æ®µã€‚è¿™åŸºæœ¬ä¸Šç¦æ­¢äº†å‘frame bufferçš„ä»»ä½•è¾“å‡º
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    //¾ö¶¨fragmentµÄÉú³É·½Ê½£¬¿ÉÒÔÓĞFILL£¬LINEºÍPOINT¼¸ÖÖÄ£Ê½
+    //å†³å®šfragmentçš„ç”Ÿæˆæ–¹å¼ï¼Œå¯ä»¥æœ‰FILLï¼ŒLINEå’ŒPOINTå‡ ç§æ¨¡å¼
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-    //ÒÔÆ¬¶ÎÊıÀ´ÃèÊöÏßÌõµÄ´ÖÏ¸£¬ÈÎºÎ´ÖÓÚ1.0fµÄÏßÌõ¶¼ĞèÒªÆôÓÃGPUµÄwideLines¹¦ÄÜ
+    //ä»¥ç‰‡æ®µæ•°æ¥æè¿°çº¿æ¡çš„ç²—ç»†ï¼Œä»»ä½•ç²—äº1.0fçš„çº¿æ¡éƒ½éœ€è¦å¯ç”¨GPUçš„wideLinesåŠŸèƒ½
     rasterizer.lineWidth = 1.0f;
-    //ÒªÊ¹ÓÃµÄÃæÌŞ³ıÀàĞÍ£¬ÓĞVK_CULL_MODE_NONE¡¢VK_CULL_MODE_FRONT_BIT¡¢VK_CULL_MODE_BACK_BIT¡¢VK_CULL_MODE_FRONT_AND_BACK
+    //è¦ä½¿ç”¨çš„é¢å‰”é™¤ç±»å‹ï¼Œæœ‰VK_CULL_MODE_NONEã€VK_CULL_MODE_FRONT_BITã€VK_CULL_MODE_BACK_BITã€VK_CULL_MODE_FRONT_AND_BACK
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    //Ö¸¶¨½«ÃæÊÓÎªÕıÃæµÄ¶¥µãË³Ğò£¬¿ÉÒÔÊÇË³Ê±Õë»òÄæÊ±Õë
+    //æŒ‡å®šå°†é¢è§†ä¸ºæ­£é¢çš„é¡¶ç‚¹é¡ºåºï¼Œå¯ä»¥æ˜¯é¡ºæ—¶é’ˆæˆ–é€†æ—¶é’ˆ
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    //rasterizer¿ÉÒÔÍ¨¹ıÌí¼ÓÒ»¸ö³£Á¿Öµ»ò¸ù¾İfragmentµÄĞ±ÂÊÆ«ÖÃÉî¶ÈÖµÀ´¸Ä±äÉî¶ÈÖµ¡£ÕâÓĞÊ±»áÓÃÓÚÒõÓ°ÌùÍ¼
+    //rasterizerå¯ä»¥é€šè¿‡æ·»åŠ ä¸€ä¸ªå¸¸é‡å€¼æˆ–æ ¹æ®fragmentçš„æ–œç‡åç½®æ·±åº¦å€¼æ¥æ”¹å˜æ·±åº¦å€¼ã€‚è¿™æœ‰æ—¶ä¼šç”¨äºé˜´å½±è´´å›¾
     rasterizer.depthBiasEnable = VK_FALSE;
     rasterizer.depthBiasConstantFactor = 0.0f;
     rasterizer.depthBiasClamp = 0.0f;
@@ -675,8 +675,8 @@ void Renderer::CreateGraphicsPipeline() {
     pipelineInfo.pDynamicState = nullptr;
     pipelineInfo.layout = graphicsPipelineLayout;
     pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0; //subpassµÄindex
-    //pipelineÅÉÉúÊ±Ê¹ÓÃ
+    pipelineInfo.subpass = 0; //subpassçš„index
+    //pipelineæ´¾ç”Ÿæ—¶ä½¿ç”¨
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.basePipelineIndex = -1;
 
@@ -926,7 +926,7 @@ void Renderer::CreateFrameResources() {
         createInfo.image = swapChain->GetVkImage(i);
 
         // Specify how the image data should be interpreted
-        // Í¨¹ıviewType²ÎÊı£¬¿ÉÒÔ½«Í¼ÏñÊÓÎªÒ»Î¬ÎÆÀí¡¢¶şÎ¬ÎÆÀí¡¢ÈıÎ¬ÎÆÀíºÍÁ¢·½ÌåÌùÍ¼cube maps
+        // é€šè¿‡viewTypeå‚æ•°ï¼Œå¯ä»¥å°†å›¾åƒè§†ä¸ºä¸€ç»´çº¹ç†ã€äºŒç»´çº¹ç†ã€ä¸‰ç»´çº¹ç†å’Œç«‹æ–¹ä½“è´´å›¾cube maps
         createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         createInfo.format = swapChain->GetVkImageFormat();
 
@@ -977,14 +977,14 @@ void Renderer::CreateFrameResources() {
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        //Òª¼æÈİµÄrenderPass
+        //è¦å…¼å®¹çš„renderPass
         framebufferInfo.renderPass = renderPass;
-        //VkImageViews¶ÔÏó
+        //VkImageViewså¯¹è±¡
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
         framebufferInfo.width = swapChain->GetVkExtent().width;
         framebufferInfo.height = swapChain->GetVkExtent().height;
-        //layersÖ¸µÄÊÇÍ¼ÏñÊı×éÖĞµÄ²ãÊı¡£ÎÒÃÇµÄ½»»»Á´Í¼ÏñÊÇµ¥ÕÅÍ¼Ïñ£¬Òò´Ë²ãÊıÎª1
+        //layersæŒ‡çš„æ˜¯å›¾åƒæ•°ç»„ä¸­çš„å±‚æ•°ã€‚æˆ‘ä»¬çš„äº¤æ¢é“¾å›¾åƒæ˜¯å•å¼ å›¾åƒï¼Œå› æ­¤å±‚æ•°ä¸º1
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(logicalDevice, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {

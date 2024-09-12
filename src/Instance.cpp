@@ -1,4 +1,4 @@
-#include <stdexcept>
+ï»¿#include <stdexcept>
 #include <set>
 #include <vector>
 #include "Instance.h"
@@ -259,7 +259,7 @@ void Instance::PickPhysicalDevice(std::vector<const char*> deviceExtensions, Que
             }
         }
 
-        //Èç¹ûĞèÒªpresent queue family£¬ËµÃ÷ÒªÏÔÊ¾£¬ÄÇÃ´ĞèÒª¼ì²éÉè±¸Ö§³ÖµÄSurfaceµÄÊôĞÔ
+        //å¦‚æœéœ€è¦present queue familyï¼Œè¯´æ˜è¦æ˜¾ç¤ºï¼Œé‚£ä¹ˆéœ€è¦æ£€æŸ¥è®¾å¤‡æ”¯æŒçš„Surfaceçš„å±æ€§
         if (requiredQueues[QueueFlags::Present]) {
             // Get basic surface capabilities
             vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &surfaceCapabilities);
@@ -352,9 +352,9 @@ Device* Instance::CreateDevice(QueueFlagBits requiredQueues, VkPhysicalDeviceFea
         throw std::runtime_error("Failed to create logical device");
     }
 
-    //queueÊÇºÍlogical deviceÒ»Æğ×Ô¶¯´´½¨µÄ£¬ÎÒÃÇĞèÒªÄÃµ½´æ´¢ÕâĞ©queueµÄ¾ä±ú
-    // queues¾ÍÊÇÄÃµ½ËùÓĞrequired queuesµÄhandle
-    //Èç¹ûqueue familyµÄindex¶¼ÊÇÒ»ÑùµÄ£¬ÄÇÃ´×îºóqueuesÀïµÄqueue¶¼ÊÇÍ¬Ò»¸ö
+    //queueæ˜¯å’Œlogical deviceä¸€èµ·è‡ªåŠ¨åˆ›å»ºçš„ï¼Œæˆ‘ä»¬éœ€è¦æ‹¿åˆ°å­˜å‚¨è¿™äº›queueçš„å¥æŸ„
+    // queueså°±æ˜¯æ‹¿åˆ°æ‰€æœ‰required queuesçš„handle
+    //å¦‚æœqueue familyçš„indexéƒ½æ˜¯ä¸€æ ·çš„ï¼Œé‚£ä¹ˆæœ€åqueuesé‡Œçš„queueéƒ½æ˜¯åŒä¸€ä¸ª
     Device::Queues queues;
     for (unsigned int i = 0; i < requiredQueues.size(); ++i) {
         if (requiredQueues[i]) {

@@ -1,4 +1,4 @@
-#include <stdio.h>
+ï»¿#include <stdio.h>
 #include "Window.h"
 
 namespace {
@@ -21,8 +21,8 @@ void InitializeWindow(int width, int height, const char* name) {
         exit(EXIT_FAILURE);
     }
 
-    //glfw×î³õÄ¿µÄÊÇ´´½¨OpenGL context£¬ËùÒÔÒª¸æËßËü²»ÒªÔÚºóĞø
-    //µ÷ÓÃÖĞ´´½¨OpenGL context¡£
+    //glfwæœ€åˆç›®çš„æ˜¯åˆ›å»ºOpenGL contextï¼Œæ‰€ä»¥è¦å‘Šè¯‰å®ƒä¸è¦åœ¨åç»­
+    //è°ƒç”¨ä¸­åˆ›å»ºOpenGL contextã€‚
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     //create window
     window = glfwCreateWindow(width, height, name, nullptr, nullptr);

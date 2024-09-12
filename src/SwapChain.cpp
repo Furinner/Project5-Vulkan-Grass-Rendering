@@ -1,4 +1,4 @@
-#include <vector>
+ï»¿#include <vector>
 #include "SwapChain.h"
 #include "Instance.h"
 #include "Device.h"
@@ -79,18 +79,18 @@ void SwapChain::Create() {
 
     const auto& surfaceCapabilities = instance->GetSurfaceCapabilities();
 
-    //Ñ¡Ôñ×î¼ÑµÄformat¡¢presentation modeºÍswap extent¡£
-    //formatÓÅÏÈ VK_FORMAT_B8G8R8A8_SRGB + VK_COLORSPACE_SRGB_NONLINEAR_KHR
-    //presentation modeÓÅÏÈ VK_PRESENT_MODE_MAILBOX_KHR £¨´¹Ö±Í¬²½+¼õÉÙÑÓ³Ù£©
-    //swap extent»ù±¾ÓëÆÁÄ»Ò»ÖÂ
+    //é€‰æ‹©æœ€ä½³çš„formatã€presentation modeå’Œswap extentã€‚
+    //formatä¼˜å…ˆ VK_FORMAT_B8G8R8A8_SRGB + VK_COLORSPACE_SRGB_NONLINEAR_KHR
+    //presentation modeä¼˜å…ˆ VK_PRESENT_MODE_MAILBOX_KHR ï¼ˆåž‚ç›´åŒæ­¥+å‡å°‘å»¶è¿Ÿï¼‰
+    //swap extentåŸºæœ¬ä¸Žå±å¹•ä¸€è‡´
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(instance->GetSurfaceFormats());
     VkPresentModeKHR presentMode = chooseSwapPresentMode(instance->GetPresentModes());
     VkExtent2D extent = chooseSwapExtent(surfaceCapabilities, GetGLFWWindow());
 
-    //Èç¹û½ö½ö¼á³Ö×îÐ¡Öµ£¬ÒâÎ¶×ÅÎÒÃÇÓÐÊ±¿ÉÄÜÐèÒªµÈ´ýÇý¶¯³ÌÐòÍê³ÉÄÚ²¿²Ù×÷£¬
-    //²ÅÄÜ»ñÈ¡ÁíÒ»ÕÅÍ¼Ïñ½øÐÐäÖÈ¾£¬ËùÒÔ½¨ÒéÖÁÉÙ±È×îÐ¡Öµ¶àÇëÇóÒ»·ùÍ¼Ïñ
+    //å¦‚æžœä»…ä»…åšæŒæœ€å°å€¼ï¼Œæ„å‘³ç€æˆ‘ä»¬æœ‰æ—¶å¯èƒ½éœ€è¦ç­‰å¾…é©±åŠ¨ç¨‹åºå®Œæˆå†…éƒ¨æ“ä½œï¼Œ
+    //æ‰èƒ½èŽ·å–å¦ä¸€å¼ å›¾åƒè¿›è¡Œæ¸²æŸ“ï¼Œæ‰€ä»¥å»ºè®®è‡³å°‘æ¯”æœ€å°å€¼å¤šè¯·æ±‚ä¸€å¹…å›¾åƒ
     uint32_t imageCount = surfaceCapabilities.minImageCount + 1;
-    //Ï£ÍûimageCount´óÓÚnumBuffers
+    //å¸Œæœ›imageCountå¤§äºŽnumBuffers
     imageCount = numBuffers > imageCount ? numBuffers : imageCount;
     if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount) {
         imageCount = surfaceCapabilities.maxImageCount;
@@ -108,13 +108,13 @@ void SwapChain::Create() {
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
-    //Ö¸¶¨ÁËÃ¿¸öÍ¼ÏñµÄ²ãÊý¡£³ý·Ç¿ª·¢µÄÊÇÁ¢Ìå 3D Ó¦ÓÃ³ÌÐò£¬·ñÔò¸ÃÖµÊ¼ÖÕÎª1
+    //æŒ‡å®šäº†æ¯ä¸ªå›¾åƒçš„å±‚æ•°ã€‚é™¤éžå¼€å‘çš„æ˜¯ç«‹ä½“ 3D åº”ç”¨ç¨‹åºï¼Œå¦åˆ™è¯¥å€¼å§‹ç»ˆä¸º1
     createInfo.imageArrayLayers = 1;
-    //ÎÒÃÇ½«swap chainÖÐµÄÍ¼ÏñÓÃÓÚºÎÖÖ²Ù×÷
+    //æˆ‘ä»¬å°†swap chainä¸­çš„å›¾åƒç”¨äºŽä½•ç§æ“ä½œ
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     const auto& queueFamilyIndices = instance->GetQueueFamilyIndices();
-    //¸ù¾ÝqueueFamilyµÄÊýÁ¿£¬¾ö¶¨ÎªframebufferÖÐµÄÍ¼ÏñÉèÖÃºÎÖÖsharingµÄÄ£Ê½
+    //æ ¹æ®queueFamilyçš„æ•°é‡ï¼Œå†³å®šä¸ºframebufferä¸­çš„å›¾åƒè®¾ç½®ä½•ç§sharingçš„æ¨¡å¼
     if (queueFamilyIndices[QueueFlags::Graphics] != queueFamilyIndices[QueueFlags::Present]) {
         // Images can be used across multiple queue families without explicit ownership transfers
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -147,9 +147,9 @@ void SwapChain::Create() {
     createInfo.clipped = VK_TRUE;
 
     // Reference to old swap chain in case current one becomes invalid
-    // ÔÚÔËÐÐ Vulkan Ó¦ÓÃ³ÌÐòÊ±£¬½»»»Á´ÓÐ¿ÉÄÜÊ§Ð§»òÎ´ÓÅ»¯£¬ÀýÈç´°¿Ú´óÐ¡±»µ÷Õû¡£
-    // ÔÚÕâÖÖÇé¿öÏÂ£¬½»»»Á´Êµ¼ÊÉÏÐèÒª´ÓÍ·¿ªÊ¼ÖØÐÂ´´½¨£¬²¢ÇÒ±ØÐëÔÚ¸Ã×Ö¶ÎÖÐÖ¸¶¨¶Ô¾É½»»»Á´µÄÒýÓÃ
-    // Ö®ºóÔÙ¸ü¸ÄÕâÀï£¬ÏÖÔÚ¼ÙÉè´°¿Ú´óÐ¡²»·¢Éú¸Ä±ä
+    // åœ¨è¿è¡Œ Vulkan åº”ç”¨ç¨‹åºæ—¶ï¼Œäº¤æ¢é“¾æœ‰å¯èƒ½å¤±æ•ˆæˆ–æœªä¼˜åŒ–ï¼Œä¾‹å¦‚çª—å£å¤§å°è¢«è°ƒæ•´ã€‚
+    // åœ¨è¿™ç§æƒ…å†µä¸‹ï¼Œäº¤æ¢é“¾å®žé™…ä¸Šéœ€è¦ä»Žå¤´å¼€å§‹é‡æ–°åˆ›å»ºï¼Œå¹¶ä¸”å¿…é¡»åœ¨è¯¥å­—æ®µä¸­æŒ‡å®šå¯¹æ—§äº¤æ¢é“¾çš„å¼•ç”¨
+    // ä¹‹åŽå†æ›´æ”¹è¿™é‡Œï¼ŒçŽ°åœ¨å‡è®¾çª—å£å¤§å°ä¸å‘ç”Ÿæ”¹å˜
     // TO DO
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
@@ -159,7 +159,7 @@ void SwapChain::Create() {
     }
 
     // --- Retrieve swap chain images ---
-    // ÄÃµ½swap chainÖÐËùÓÐVkImageµÄ¾ä±ú£¬äÖÈ¾²Ù×÷ÖÐ½«ÒýÓÃÕâÐ©¾ä±ú
+    // æ‹¿åˆ°swap chainä¸­æ‰€æœ‰VkImageçš„å¥æŸ„ï¼Œæ¸²æŸ“æ“ä½œä¸­å°†å¼•ç”¨è¿™äº›å¥æŸ„
     vkGetSwapchainImagesKHR(device->GetVkDevice(), vkSwapChain, &imageCount, nullptr);
     vkSwapChainImages.resize(imageCount);
     vkGetSwapchainImagesKHR(device->GetVkDevice(), vkSwapChain, &imageCount, vkSwapChainImages.data());
