@@ -1,4 +1,4 @@
-#include "Renderer.h"
+﻿#include "Renderer.h"
 #include "Instance.h"
 #include "ShaderModule.h"
 #include "Vertex.h"
@@ -15,8 +15,8 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     scene(scene),
     camera(camera) {
 
-    CreateCommandPools();
-    CreateRenderPass();
+    CreateCommandPools(); //commandPool管理用于commandBuffers的内存
+    CreateRenderPass();  //render pass决定渲染时如何使用frame buffer
     CreateCameraDescriptorSetLayout();
     CreateModelDescriptorSetLayout();
     CreateTimeDescriptorSetLayout();
@@ -27,8 +27,8 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
     CreateGrassDescriptorSets();
     CreateTimeDescriptorSet();
     CreateComputeDescriptorSets();
-    CreateFrameResources();
-    CreateGraphicsPipeline();
+    CreateFrameResources();  //创建imageView和frameBuffer
+    CreateGraphicsPipeline();  //包括所有的可编程stages（shaderModule）、fixed-function stages、renderPass等
     CreateGrassPipeline();
     CreateComputePipeline();
     RecordCommandBuffers();
@@ -36,9 +36,13 @@ Renderer::Renderer(Device* device, SwapChain* swapChain, Scene* scene, Camera* c
 }
 
 void Renderer::CreateCommandPools() {
+    //Each command pool can only allocate command buffers that are submitted on a single type of queue
+    //有了command pool才可以开始allocate command buffer。
     VkCommandPoolCreateInfo graphicsPoolInfo = {};
     graphicsPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     graphicsPoolInfo.queueFamilyIndex = device->GetInstance()->GetQueueFamilyIndices()[QueueFlags::Graphics];
+    //VK_COMMAND_POOL_CREATE_TRANSIENT_BIT：提示command buffer总是会加入新命令。1
+    //VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT：Allow command buffers to be rerecorded individually, without this flag they all have to be reset together. 2
     graphicsPoolInfo.flags = 0;
 
     if (vkCreateCommandPool(logicalDevice, &graphicsPoolInfo, nullptr, &graphicsCommandPool) != VK_SUCCESS) {
@@ -56,19 +60,35 @@ void Renderer::CreateCommandPools() {
 }
 
 void Renderer::CreateRenderPass() {
+    // 有关渲染时将使用的frame buffer attachment的信息
     // Color buffer attachment represented by one of the images from the swap chain
     VkAttachmentDescription colorAttachment = {};
     colorAttachment.format = swapChain->GetVkImageFormat();
+    //多重采样
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    //渲染前如何处理attachment中的颜色和深度数据
+    //VK_ATTACHMENT_LOAD_OP_LOAD：保留现有内容
+    //VK_ATTACHMENT_LOAD_OP_CLEAR：清除为某一常量
+    //VK_ATTACHMENT_LOAD_OP_DONT_CARE
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    //渲染后如何处理attachment中的颜色和深度数据
+    //VK_ATTACHMENT_STORE_OP_STORE：渲染内容将存储在内存中，之后可以读取
+    //VK_ATTACHMENT_STORE_OP_DONT_CARE
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    //同上，只不过是stencil数据
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    //Vulkan 中的纹理和帧缓存由具有特定像素格式的VkImage对象表示，但内存中的像素layout会根据您要对图像进行的操作而发生变化。
+    //initialLayout指定了图像在开始渲染之前的layout
+    //finalLayout指定了渲染过程结束后自动过渡到的layout
+    //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: 在交换链中显示的图像
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     // Create a color attachment reference to be used with subpass
+    // subpass会用到
     VkAttachmentReference colorAttachmentRef = {};
+    //通过index引用attachments数组中的attachment
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -504,6 +524,7 @@ void Renderer::CreateComputeDescriptorSets() {
 }
 
 void Renderer::CreateGraphicsPipeline() {
+    //创建shaderModule，注意这里的文件已经是编译好的SPIR-V格式了
     VkShaderModule vertShaderModule = ShaderModule::Create("shaders/graphics.vert.spv", logicalDevice);
     VkShaderModule fragShaderModule = ShaderModule::Create("shaders/graphics.frag.spv", logicalDevice);
 
@@ -520,6 +541,7 @@ void Renderer::CreateGraphicsPipeline() {
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main";
 
+    // 可编程stages的数组
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
     // --- Set up fixed-function stages ---
@@ -565,12 +587,19 @@ void Renderer::CreateGraphicsPipeline() {
     // Rasterizer
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    //如果为True，则超出近平面和远平面的片段就会被夹住，而不会被丢弃
     rasterizer.depthClampEnable = VK_FALSE;
+    //如果为True，那么几何体将永远不会通过光栅化阶段。这基本上禁止了向frame buffer的任何输出
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    //决定fragment的生成方式，可以有FILL，LINE和POINT几种模式
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    //以片段数来描述线条的粗细，任何粗于1.0f的线条都需要启用GPU的wideLines功能
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    //要使用的面剔除类型，有VK_CULL_MODE_NONE、VK_CULL_MODE_FRONT_BIT、VK_CULL_MODE_BACK_BIT、VK_CULL_MODE_FRONT_AND_BACK
+    rasterizer.cullMode = VK_CULL_MODE_NONE;
+    //指定将面视为正面的顶点顺序，可以是顺时针或逆时针
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    //rasterizer可以通过添加一个常量值或根据fragment的斜率偏置深度值来改变深度值。这有时会用于阴影贴图
     rasterizer.depthBiasEnable = VK_FALSE;
     rasterizer.depthBiasConstantFactor = 0.0f;
     rasterizer.depthBiasClamp = 0.0f;
@@ -595,7 +624,7 @@ void Renderer::CreateGraphicsPipeline() {
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.minDepthBounds = 0.0f;
     depthStencil.maxDepthBounds = 1.0f;
-    depthStencil.stencilTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = VK_TRUE;
 
     // Color blending (turned off here, but showing options for learning)
     // --> Configuration per attached framebuffer
@@ -650,7 +679,8 @@ void Renderer::CreateGraphicsPipeline() {
     pipelineInfo.pDynamicState = nullptr;
     pipelineInfo.layout = graphicsPipelineLayout;
     pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0;
+    pipelineInfo.subpass = 0; //subpass的index
+    //pipeline派生时使用
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.basePipelineIndex = -1;
 
@@ -900,6 +930,7 @@ void Renderer::CreateFrameResources() {
         createInfo.image = swapChain->GetVkImage(i);
 
         // Specify how the image data should be interpreted
+        // 通过viewType参数，可以将图像视为一维纹理、二维纹理、三维纹理和立方体贴图cube maps
         createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         createInfo.format = swapChain->GetVkImageFormat();
 
@@ -924,6 +955,7 @@ void Renderer::CreateFrameResources() {
 
     VkFormat depthFormat = device->GetInstance()->GetSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     // CREATE DEPTH IMAGE
+    // 我们只需要一个深度图像，因为一次只运行一个绘制操作
     Image::Create(device,
         swapChain->GetVkExtent().width,
         swapChain->GetVkExtent().height,
@@ -940,7 +972,6 @@ void Renderer::CreateFrameResources() {
     // Transition the image for use as depth-stencil
     Image::TransitionLayout(device, graphicsCommandPool, depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-    
     // CREATE FRAMEBUFFERS
     framebuffers.resize(swapChain->GetCount());
     for (size_t i = 0; i < swapChain->GetCount(); i++) {
@@ -951,11 +982,14 @@ void Renderer::CreateFrameResources() {
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        //要兼容的renderPass
         framebufferInfo.renderPass = renderPass;
+        //VkImageViews对象
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
         framebufferInfo.width = swapChain->GetVkExtent().width;
         framebufferInfo.height = swapChain->GetVkExtent().height;
+        //layers指的是图像数组中的层数。我们的交换链图像是单张图像，因此层数为1
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(logicalDevice, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {
@@ -1044,6 +1078,8 @@ void Renderer::RecordCommandBuffers() {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = graphicsCommandPool;
+    //VK_COMMAND_BUFFER_LEVEL_PRIMARY：可以提交到队列中执行，但不能从其他command buffer中调用。
+    //VK_COMMAND_BUFFER_LEVEL_SECONDARY：不能直接提交，但可以从primary command buffer中调用。
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
@@ -1055,7 +1091,11 @@ void Renderer::RecordCommandBuffers() {
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        //VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT: command buffer在执行一次后将立即重新记录。
+        //VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT：这是一个辅助命令缓冲区，将完全在一次渲染过程中使用。
+        //VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT：该命令缓冲区可以在执行过程中重新提交。
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        //与secondary command buffers有关
         beginInfo.pInheritanceInfo = nullptr;
 
         // ~ Start recording ~
@@ -1094,6 +1134,8 @@ void Renderer::RecordCommandBuffers() {
         // Bind the camera descriptor set. This is set 0 in all pipelines so it will be inherited
         vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout, 0, 1, &cameraDescriptorSet, 0, nullptr);
 
+        //VK_SUBPASS_CONTENTS_INLINE: 渲染传递命令将嵌入主命令缓冲区本身，不会执行辅助命令缓冲区
+        //VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS: 将通过二级命令缓冲区执行render pass command
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         // Bind the graphics pipeline
